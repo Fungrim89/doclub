@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Студия — Doclub.tv</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+  <link rel="stylesheet" href="css/tv.css" />
+</head>
+<body>
+  <div class="app">
+    <div data-header></div>
+
+    <main class="main">
+      <div class="container">
+        <div class="studio">
+          <!-- Sidebar -->
+          <nav class="studio__nav" id="studio-nav">
+            <button class="studio__nav-item is-active" data-view="dashboard">
+              <span class="studio__nav-item-icon">📊</span> Сводка
+            </button>
+            <button class="studio__nav-item" data-view="broadcast">
+              <span class="studio__nav-item-icon">📡</span> Создать эфир
+            </button>
+            <button class="studio__nav-item" data-view="upload">
+              <span class="studio__nav-item-icon">⬆</span> Загрузить видео
+            </button>
+            <button class="studio__nav-item" data-view="videos">
+              <span class="studio__nav-item-icon">🎬</span> Мои видео
+            </button>
+            <button class="studio__nav-item" data-view="broadcasts">
+              <span class="studio__nav-item-icon">📺</span> Мои эфиры
+            </button>
+            <button class="studio__nav-item" data-view="tiers">
+              <span class="studio__nav-item-icon">⭐</span> Уровни доступа
+            </button>
+            <button class="studio__nav-item" data-view="subscribers">
+              <span class="studio__nav-item-icon">👥</span> Подписчики
+            </button>
+            <button class="studio__nav-item" data-view="channel">
+              <span class="studio__nav-item-icon">🎛</span> Канал
+            </button>
+          </nav>
+
+          <div class="studio__main">
+            <!-- Dashboard -->
+            <section class="studio-view is-active" data-view="dashboard">
+              <div class="studio__head">
+                <div>
+                  <h1 class="studio__title">Кабинет автора</h1>
+                  <p class="studio__subtitle" id="dash-greeting"></p>
+                </div>
+                <div style="display:flex;gap:8px">
+                  <button class="btn btn--ghost" data-goto="broadcast">📡 Запустить эфир</button>
+                  <button class="btn btn--primary" data-goto="upload">⬆ Загрузить видео</button>
+                </div>
+              </div>
+
+              <div class="stat-grid">
+                <div class="stat">
+                  <div class="stat__label">Подписчики</div>
+                  <div class="stat__value" id="stat-subs">—</div>
+                  <div class="stat__delta">+128 за неделю</div>
+                </div>
+                <div class="stat">
+                  <div class="stat__label">Просмотры за 7 дн.</div>
+                  <div class="stat__value">24 612</div>
+                  <div class="stat__delta">+18%</div>
+                </div>
+                <div class="stat">
+                  <div class="stat__label">Видео</div>
+                  <div class="stat__value" id="stat-videos">—</div>
+                </div>
+                <div class="stat">
+                  <div class="stat__label">Активные премиум</div>
+                  <div class="stat__value">412</div>
+                  <div class="stat__delta">+9%</div>
+                </div>
+                <div class="stat">
+                  <div class="stat__label">Доход (мес.)</div>
+                  <div class="stat__value">182 400 ₽</div>
+                  <div class="stat__delta">+24%</div>
+                </div>
+              </div>
+
+              <div class="section">
+                <div class="section__head">
+                  <h2 class="section__title">Ближайшие эфиры</h2>
+                  <button class="section__link" data-goto="broadcast">+ Новый эфир</button>
+                </div>
+                <div class="table-wrap">
+                  <table class="table" id="upcoming-table">
+                    <thead>
+                      <tr>
+                        <th>Эфир</th><th>Старт</th><th>Доступ</th><th>Статус</th><th></th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+            <!-- Create broadcast -->
+            <section class="studio-view" data-view="broadcast">
+              <div class="studio__head">
+                <div>
+                  <h1 class="studio__title">Новый эфир</h1>
+                  <p class="studio__subtitle">Заполните данные и получите параметры для OBS.</p>
+                </div>
+              </div>
+
+              <!-- Step 1: form -->
+              <form class="form" id="broadcast-form">
+                <div class="form__section">
+                  <h2 class="form__section-title">Описание эфира</h2>
+                  <p class="form__section-desc">Виден в карточке и в верхней строке «Сейчас в эфире».</p>
+
+                  <div class="field">
+                    <label class="field__label">Название</label>
+                    <input class="field__input" name="title" required placeholder="Напр. Острая декомпенсация ХСН: алгоритм первых 24 часов" />
+                  </div>
+                  <div class="field">
+                    <label class="field__label">Описание</label>
+                    <textarea class="field__textarea" name="description" placeholder="О чём эфир, для кого, какие вопросы планируете обсудить."></textarea>
+                  </div>
+                  <div class="form-row">
+                    <div class="field">
+                      <label class="field__label">Категория</label>
+                      <select class="field__select" name="category" required>
+                        <option value="cardiology">Кардиология</option>
+                        <option value="neurology">Неврология</option>
+                        <option value="pharmacology">Фармакология</option>
+                        <option value="endo">Эндокринология</option>
+                        <option value="pediatrics">Педиатрия</option>
+                        <option value="onco">Онкология</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label class="field__label">Дата и время старта</label>
+                      <input class="field__input" type="datetime-local" name="scheduled_start" />
+                      <span class="field__hint">Можно начать сразу — оставьте пустым.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form__section">
+                  <h2 class="form__section-title">Доступ к эфиру</h2>
+                  <p class="form__section-desc">Решите, кому будет открыт прямой эфир и запись.</p>
+                  <div class="radio-group">
+                    <label class="radio-card">
+                      <input type="radio" name="access_type" value="free" checked />
+                      <div>
+                        <div class="radio-card__title">Бесплатно</div>
+                        <div class="radio-card__desc">Эфир открыт всем зарегистрированным пользователям.</div>
+                      </div>
+                    </label>
+                    <label class="radio-card">
+                      <input type="radio" name="access_type" value="subscription" />
+                      <div>
+                        <div class="radio-card__title">Только для подписчиков канала</div>
+                        <div class="radio-card__desc">Доступен подписчикам выбранного уровня и выше.</div>
+                      </div>
+                    </label>
+                    <label class="radio-card">
+                      <input type="radio" name="access_type" value="one_time" />
+                      <div>
+                        <div class="radio-card__title">Разовая покупка</div>
+                        <div class="radio-card__desc">Зрители платят один раз за этот эфир (paywall через dtech_paywall).</div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="form__footer">
+                  <button type="button" class="btn btn--ghost" data-goto="dashboard">Отмена</button>
+                  <button type="submit" class="btn btn--primary">Создать эфир →</button>
+                </div>
+              </form>
+
+              <!-- Step 2: OBS / RTMP details -->
+              <div id="broadcast-result" hidden>
+                <div class="status-line status-line--ready">
+                  <span class="status-line__dot"></span>
+                  <strong>Эфир готов</strong>
+                  <span style="color:var(--text-soft);margin-left:auto" id="broadcast-name"></span>
+                </div>
+
+                <div class="rtmp">
+                  <h2 class="rtmp__title">Параметры для OBS</h2>
+                  <p class="rtmp__sub">Откройте OBS → Settings → Stream → выберите «Custom...» и вставьте значения ниже. Ключ потока никому не передавайте.</p>
+
+                  <div class="rtmp__row">
+                    <div class="rtmp__label">Server</div>
+                    <div class="rtmp__value" id="rtmp-server"></div>
+                    <button class="rtmp__copy" data-copy="server">Copy</button>
+                  </div>
+                  <div class="rtmp__row">
+                    <div class="rtmp__label">Stream Key</div>
+                    <div class="rtmp__value rtmp__value--masked" id="rtmp-key"></div>
+                    <button class="rtmp__copy" data-copy="key">Copy</button>
+                  </div>
+                  <div class="rtmp__row">
+                    <div class="rtmp__label">YCV Stream ID</div>
+                    <div class="rtmp__value" id="rtmp-yc"></div>
+                    <button class="rtmp__copy" data-copy="yc">Copy</button>
+                  </div>
+                </div>
+
+                <div class="form">
+                  <h3 class="form__section-title">Чек-лист подготовки</h3>
+                  <ul class="tier__perks" style="margin:14px 0">
+                    <li>OBS Studio 30.x или новее. Bitrate 4500–6000 kbps, 1080p30 / 720p60.</li>
+                    <li>Подключите гарнитуру, проверьте звук в OBS Audio Mixer.</li>
+                    <li>В OBS нажмите Start Streaming — статус ниже сменится на «В эфире».</li>
+                    <li>После окончания эфира появится запись в разделе «Мои видео».</li>
+                  </ul>
+                  <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap">
+                    <a class="btn btn--primary" id="watch-link" target="_blank">Открыть страницу зрителя</a>
+                    <button class="btn btn--danger" id="end-broadcast">Завершить эфир</button>
+                    <button class="btn btn--ghost" data-goto="dashboard">Вернуться к сводке</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Upload video -->
+            <section class="studio-view" data-view="upload">
+              <div class="studio__head">
+                <div>
+                  <h1 class="studio__title">Загрузить видео</h1>
+                  <p class="studio__subtitle">
+                    Файл уходит напрямую в Yandex Cloud Video через TUS-загрузку, ничего не проходит через нашу инфраструктуру.
+                  </p>
+                </div>
+              </div>
+
+              <div class="form">
+                <div class="drop-zone" id="drop-zone">
+                  <input type="file" accept="video/*" id="file-input" hidden />
+                  <div class="drop-zone__icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="17 8 12 3 7 8"/>
+                      <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                  </div>
+                  <div class="drop-zone__title" id="drop-title">Перетащите видео сюда</div>
+                  <div class="drop-zone__sub">или нажмите, чтобы выбрать файл (до 5 GB)</div>
+                </div>
+                <div class="progress" id="upload-progress" hidden><div class="progress__bar"></div></div>
+
+                <div class="form__section">
+                  <h2 class="form__section-title">Метаданные</h2>
+                  <div class="field">
+                    <label class="field__label">Название</label>
+                    <input class="field__input" name="title" placeholder="Например, ЭКГ-разбор: блокады ножек пучка Гиса" />
+                  </div>
+                  <div class="field">
+                    <label class="field__label">Описание</label>
+                    <textarea class="field__textarea" name="description"></textarea>
+                  </div>
+                  <div class="form-row">
+                    <div class="field">
+                      <label class="field__label">Категория</label>
+                      <select class="field__select" name="category">
+                        <option value="cardiology">Кардиология</option>
+                        <option value="neurology">Неврология</option>
+                        <option value="pharmacology">Фармакология</option>
+                        <option value="endo">Эндокринология</option>
+                        <option value="pediatrics">Педиатрия</option>
+                        <option value="onco">Онкология</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label class="field__label">Доступ</label>
+                      <select class="field__select" name="access_type">
+                        <option value="free">Бесплатно</option>
+                        <option value="subscription">Подписчикам канала</option>
+                        <option value="one_time">Разовая покупка</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form__footer">
+                  <button class="btn btn--ghost" data-goto="dashboard">Отмена</button>
+                  <button class="btn btn--primary" id="upload-submit">Опубликовать</button>
+                </div>
+              </div>
+            </section>
+
+            <!-- Videos list -->
+            <section class="studio-view" data-view="videos">
+              <div class="studio__head">
+                <div><h1 class="studio__title">Мои видео</h1></div>
+                <button class="btn btn--primary" data-goto="upload">⬆ Загрузить</button>
+              </div>
+              <div class="table-wrap">
+                <table class="table" id="videos-table">
+                  <thead><tr><th>Видео</th><th>Доступ</th><th>Просмотры</th><th>Опубликовано</th><th></th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </section>
+
+            <!-- Broadcasts list -->
+            <section class="studio-view" data-view="broadcasts">
+              <div class="studio__head">
+                <div><h1 class="studio__title">Мои эфиры</h1></div>
+                <button class="btn btn--primary" data-goto="broadcast">📡 Новый эфир</button>
+              </div>
+              <div class="table-wrap">
+                <table class="table" id="broadcasts-table">
+                  <thead><tr><th>Эфир</th><th>Старт</th><th>Доступ</th><th>Статус</th><th></th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </section>
+
+            <!-- Tiers -->
+            <section class="studio-view" data-view="tiers">
+              <div class="studio__head">
+                <div>
+                  <h1 class="studio__title">Уровни доступа</h1>
+                  <p class="studio__subtitle">Кумулятивная модель: уровень 3 включает доступ к уровням 1–2.</p>
+                </div>
+                <button class="btn btn--primary" id="add-tier">+ Новый уровень</button>
+              </div>
+              <div class="tier-grid" id="tiers-grid"></div>
+            </section>
+
+            <!-- Subscribers -->
+            <section class="studio-view" data-view="subscribers">
+              <div class="studio__head">
+                <div><h1 class="studio__title">Подписчики</h1>
+                  <p class="studio__subtitle">Активные подписки, выданный Premium, история продлений.</p>
+                </div>
+                <div style="display:flex;gap:8px">
+                  <button class="btn btn--ghost">Экспорт CSV</button>
+                  <button class="btn btn--premium" id="grant-premium">🎁 Выдать Premium</button>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table class="table">
+                  <thead><tr><th>Пользователь</th><th>Уровень</th><th>Источник</th><th>Активна до</th><th></th></tr></thead>
+                  <tbody id="subs-tbody"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <!-- Channel settings -->
+            <section class="studio-view" data-view="channel">
+              <div class="studio__head"><div><h1 class="studio__title">Канал</h1></div></div>
+              <form class="form" id="channel-form">
+                <div class="form__section">
+                  <h2 class="form__section-title">Профиль</h2>
+                  <div class="field">
+                    <label class="field__label">Название канала</label>
+                    <input class="field__input" name="name" />
+                  </div>
+                  <div class="field">
+                    <label class="field__label">Описание</label>
+                    <textarea class="field__textarea" name="description"></textarea>
+                  </div>
+                  <div class="form-row">
+                    <div class="field">
+                      <label class="field__label">Категория</label>
+                      <select class="field__select" name="category">
+                        <option value="cardiology">Кардиология</option>
+                        <option value="neurology">Неврология</option>
+                        <option value="pharmacology">Фармакология</option>
+                        <option value="endo">Эндокринология</option>
+                        <option value="pediatrics">Педиатрия</option>
+                        <option value="onco">Онкология</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label class="field__label">Slug (адрес)</label>
+                      <input class="field__input" name="slug" placeholder="cardiocast" />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form__section">
+                  <h2 class="form__section-title">Гео-ограничения</h2>
+                  <p class="form__section-desc">Оставьте пустым, чтобы канал был доступен всем.</p>
+                  <div class="check-group">
+                    <label class="consent"><input type="checkbox" /> Россия</label>
+                    <label class="consent"><input type="checkbox" /> Узбекистан</label>
+                    <label class="consent"><input type="checkbox" /> Казахстан</label>
+                    <label class="consent"><input type="checkbox" /> ОАЭ</label>
+                  </div>
+                </div>
+
+                <div class="form__footer">
+                  <button type="submit" class="btn btn--primary">Сохранить</button>
+                </div>
+              </form>
+            </section>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div data-footer></div>
+  </div>
+
+  <script src="js/tv-api.js"></script>
+  <script src="js/tv-app.js"></script>
+  <script>
+    (async function () {
+      DoclubUI.mountChrome("studio");
+
+      // Auth gate
+      if (!DoclubAPI.auth.isAuthenticated) {
+        location.href = "login.html?next=" + encodeURIComponent(location.href);
+        return;
+      }
+
+      const me = DoclubAPI.auth.user;
+      document.getElementById("dash-greeting").textContent =
+        `Здравствуйте, ${me.full_name || "автор"}! Вот сводка по вашему каналу.`;
+
+      // Pick author's channel — for demo, use the first channel as "mine".
+      const channels = (await DoclubAPI.listChannels()).results;
+      const myChannel = channels.find((c) => c.owner_user?.id === me.id) ||
+        channels[0];
+
+      const [videosRes, broadcastsRes, tiersRes] = await Promise.all([
+        DoclubAPI.listVideos({ channel: myChannel.id }),
+        DoclubAPI.listBroadcasts({ channel: myChannel.id }),
+        DoclubAPI.listTiers({ channel: myChannel.id }),
+      ]);
+      const videos = videosRes.results;
+      const broadcasts = broadcastsRes.results;
+      const tiers = tiersRes.results;
+
+      // ---- Dashboard stats ----
+      document.getElementById("stat-subs").textContent =
+        DoclubUI.formatViews(myChannel.subscribers);
+      document.getElementById("stat-videos").textContent = videos.length;
+
+      // ---- Upcoming table ----
+      const upcoming = broadcasts.filter(
+        (b) => b.status === "scheduled" || b.status === "live"
+      );
+      document.querySelector("#upcoming-table tbody").innerHTML = upcoming.length
+        ? upcoming
+            .map(
+              (b) => `
+          <tr>
+            <td>
+              <span class="table__title">${b.title}</span>
+              <span class="table__subtitle">${b.category?.name || ""}</span>
+            </td>
+            <td>${DoclubUI.formatStartTime(b.scheduled_start)}</td>
+            <td>${DoclubUI.accessBadge(b)}</td>
+            <td>${
+              b.status === "live"
+                ? `<span class="badge badge--live">LIVE</span>`
+                : `<span class="badge">Запланирован</span>`
+            }</td>
+            <td><a class="btn btn--sm" href="watch.html?broadcast=${b.id}">Открыть</a></td>
+          </tr>
+        `
+            )
+            .join("")
+        : `<tr><td colspan="5"><div class="empty"><div class="empty__icon">🗓</div><div>Эфиры не запланированы</div></div></td></tr>`;
+
+      // ---- Videos table ----
+      document.querySelector("#videos-table tbody").innerHTML = videos.length
+        ? videos
+            .map(
+              (v) => `
+          <tr>
+            <td>
+              <span class="table__title">${v.title}</span>
+              <span class="table__subtitle">${DoclubUI.formatDuration(
+                v.duration
+              )} · ${v.category?.name || ""}</span>
+            </td>
+            <td>${DoclubUI.accessBadge(v)}</td>
+            <td>${DoclubUI.formatViews(v.views)}</td>
+            <td>${DoclubUI.formatRelative(v.published_at)}</td>
+            <td><a class="btn btn--sm" href="watch.html?video=${v.id}">Открыть</a></td>
+          </tr>
+        `
+            )
+            .join("")
+        : `<tr><td colspan="5"><div class="empty"><div class="empty__icon">🎬</div><div>Загрузите первое видео</div></div></td></tr>`;
+
+      // ---- Broadcasts table ----
+      document.querySelector("#broadcasts-table tbody").innerHTML = broadcasts
+        .length
+        ? broadcasts
+            .map(
+              (b) => `
+          <tr>
+            <td><span class="table__title">${b.title}</span></td>
+            <td>${DoclubUI.formatStartTime(b.scheduled_start)}</td>
+            <td>${DoclubUI.accessBadge(b)}</td>
+            <td>${
+              b.status === "live"
+                ? `<span class="badge badge--live">LIVE</span>`
+                : b.status === "scheduled"
+                ? `<span class="badge">Запланирован</span>`
+                : `<span class="badge">${b.status}</span>`
+            }</td>
+            <td><a class="btn btn--sm" href="watch.html?broadcast=${b.id}">Открыть</a></td>
+          </tr>
+        `
+            )
+            .join("")
+        : `<tr><td colspan="5"><div class="empty"><div class="empty__icon">📡</div><div>Эфиров пока нет</div></div></td></tr>`;
+
+      // ---- Tiers ----
+      const renderTiers = () => {
+        document.getElementById("tiers-grid").innerHTML = tiers.length
+          ? tiers
+              .map(
+                (t, i) => `
+          <div class="tier ${i === 1 ? "tier--featured" : ""}">
+            <div class="tier__level">Уровень ${t.level}</div>
+            <h3 class="tier__name">${t.name}</h3>
+            <div class="tier__price">${DoclubUI.priceLabel(
+              t.price,
+              t.currency
+            )} <small>/ ${t.period === "year" ? "год" : "мес"}</small></div>
+            <p class="tier__desc">${t.description}</p>
+            <ul class="tier__perks">${(t.perks || [])
+              .map((p) => `<li>${p}</li>`)
+              .join("")}</ul>
+            <div style="display:flex;gap:8px;margin-top:auto">
+              <button class="btn btn--ghost btn--sm" data-edit-tier="${t.id}">Изменить</button>
+              <button class="btn btn--sm" data-toggle-tier="${
+                t.id
+              }">${t.is_active ? "Скрыть" : "Активировать"}</button>
+            </div>
+          </div>
+        `
+              )
+              .join("") +
+            `<button class="tier" style="border-style:dashed;align-items:center;justify-content:center;cursor:pointer" id="add-tier-card">
+            <div style="text-align:center">
+              <div style="font-size:36px;margin-bottom:6px">+</div>
+              <div>Новый уровень</div>
+            </div>
+           </button>`
+          : `<div class="empty" style="grid-column:1/-1"><div class="empty__icon">⭐</div><div class="empty__title">Уровни не настроены</div><button class="btn btn--primary" id="add-tier-empty">Создать первый уровень</button></div>`;
+      };
+      renderTiers();
+
+      // ---- Subscribers (demo data) ----
+      const subs = [
+        { user: "А. Петров", level: 2, source: "Подписка", expires_in: 14 },
+        { user: "М. Иванова", level: 1, source: "Подписка", expires_in: 22 },
+        { user: "К. Сидоров", level: 3, source: "Подписка", expires_in: 7 },
+        {
+          user: "Doctor_84",
+          level: 2,
+          source: "Premium из MAX (boт)",
+          expires_in: 312,
+        },
+        {
+          user: "Е. Соколова",
+          level: 2,
+          source: "Premium из MAX (boт)",
+          expires_in: 305,
+        },
+      ];
+      document.getElementById("subs-tbody").innerHTML = subs
+        .map(
+          (s) => `
+        <tr>
+          <td><span class="table__title">${s.user}</span></td>
+          <td>L${s.level}</td>
+          <td>${
+            s.source.includes("MAX")
+              ? `<span class="badge badge--premium">${s.source}</span>`
+              : s.source
+          }</td>
+          <td>через ${s.expires_in} дн.</td>
+          <td><button class="btn btn--ghost btn--sm">Отозвать</button></td>
+        </tr>
+      `
+        )
+        .join("");
+
+      document.getElementById("grant-premium").addEventListener("click", () => {
+        DoclubUI.toast(
+          "Премиум выдан. Запись добавлена в журнал Doclub.ID.",
+          "success"
+        );
+      });
+
+      // ---- Channel form prefill ----
+      const form = document.getElementById("channel-form");
+      form.querySelector("[name='name']").value = myChannel.name;
+      form.querySelector("[name='description']").value = myChannel.description;
+      form.querySelector("[name='slug']").value = myChannel.slug || "";
+      form.querySelector("[name='category']").value =
+        myChannel.category?.slug || "cardiology";
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        DoclubUI.toast("Изменения канала сохранены", "success");
+      });
+
+      // ---- Navigation ----
+      document.querySelectorAll("#studio-nav .studio__nav-item").forEach((b) =>
+        b.addEventListener("click", () => activate(b.dataset.view))
+      );
+      document.querySelectorAll("[data-goto]").forEach((b) =>
+        b.addEventListener("click", () => activate(b.dataset.goto))
+      );
+      const initial = DoclubUI.qs("view") || "dashboard";
+      activate(initial);
+
+      function activate(name) {
+        document
+          .querySelectorAll(".studio__nav-item")
+          .forEach((i) =>
+            i.classList.toggle("is-active", i.dataset.view === name)
+          );
+        document
+          .querySelectorAll(".studio-view")
+          .forEach((v) =>
+            v.classList.toggle("is-active", v.dataset.view === name)
+          );
+        const u = new URL(location.href);
+        u.searchParams.set("view", name);
+        history.replaceState({}, "", u);
+        window.scrollTo(0, 0);
+      }
+
+      // ---- Create broadcast ----
+      document.getElementById("broadcast-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(e.target).entries());
+        const created = await DoclubAPI.createBroadcast(myChannel.id, {
+          title: data.title,
+          description: data.description,
+          category: { slug: data.category, name: data.category },
+          access_type: data.access_type,
+          scheduled_start: data.scheduled_start || new Date().toISOString(),
+          status: "ready",
+        });
+        document.getElementById("broadcast-form").hidden = true;
+        document.getElementById("broadcast-result").hidden = false;
+        document.getElementById("broadcast-name").textContent = created.title;
+        document.getElementById("rtmp-server").textContent =
+          created.rtmp_server_url;
+        document.getElementById("rtmp-key").textContent = created.stream_key;
+        document.getElementById("rtmp-yc").textContent = created.ycv_stream_id;
+        document.getElementById("watch-link").href =
+          "watch.html?broadcast=" + created.id;
+
+        document.querySelectorAll("[data-copy]").forEach((btn) =>
+          btn.addEventListener("click", async () => {
+            const map = { server: "rtmp-server", key: "rtmp-key", yc: "rtmp-yc" };
+            const txt = document.getElementById(map[btn.dataset.copy]).textContent;
+            try {
+              await navigator.clipboard.writeText(txt);
+              const orig = btn.textContent;
+              btn.textContent = "Copied";
+              setTimeout(() => (btn.textContent = orig), 1200);
+            } catch (_) {
+              DoclubUI.toast("Скопируйте вручную: " + txt);
+            }
+          })
+        );
+
+        document.getElementById("end-broadcast").addEventListener("click", () => {
+          DoclubUI.toast("Эфир завершён. Запись появится в «Мои видео».", "success");
+          activate("dashboard");
+        });
+      });
+
+      // ---- Upload (mocked TUS flow) ----
+      const dropZone = document.getElementById("drop-zone");
+      const fileInput = document.getElementById("file-input");
+      const progress = document.getElementById("upload-progress");
+      const progressBar = progress.querySelector(".progress__bar");
+
+      dropZone.addEventListener("click", () => fileInput.click());
+      dropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZone.classList.add("is-drag");
+      });
+      dropZone.addEventListener("dragleave", () =>
+        dropZone.classList.remove("is-drag")
+      );
+      dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("is-drag");
+        if (e.dataTransfer.files.length)
+          handleFile(e.dataTransfer.files[0]);
+      });
+      fileInput.addEventListener("change", () => {
+        if (fileInput.files.length) handleFile(fileInput.files[0]);
+      });
+
+      function handleFile(file) {
+        document.getElementById("drop-title").textContent = file.name;
+        progress.hidden = false;
+        let pct = 0;
+        const tick = setInterval(() => {
+          pct = Math.min(100, pct + Math.random() * 12);
+          progressBar.style.width = pct + "%";
+          if (pct >= 100) {
+            clearInterval(tick);
+            DoclubUI.toast("Файл получен. Запускаем обработку в YCV…", "success");
+          }
+        }, 250);
+      }
+
+      document.getElementById("upload-submit").addEventListener("click", async () => {
+        const inputs = document
+          .querySelector("[data-view='upload'] .form")
+          .querySelectorAll("input,textarea,select");
+        const payload = {};
+        inputs.forEach((i) => {
+          if (i.name) payload[i.name] = i.value;
+        });
+        if (!payload.title) {
+          DoclubUI.toast("Укажите название видео", "error");
+          return;
+        }
+        const created = await DoclubAPI.uploadVideo(myChannel.id, {
+          title: payload.title,
+          description: payload.description,
+          category: { slug: payload.category, name: payload.category },
+          access_type: payload.access_type,
+        });
+        DoclubUI.toast("Видео отправлено в очередь обработки", "success");
+        location.href = "watch.html?video=" + created.id;
+      });
+    })();
+  </script>
+</body>
+</html>

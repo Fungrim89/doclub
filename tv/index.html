@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Doclub.tv — стриминг и UGC-контент для врачей</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Doclub.tv — стриминговая платформа для врачей и фармацевтов. Прямые эфиры, авторские каналы, клинические разборы." />
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+  <link rel="stylesheet" href="css/tv.css" />
+</head>
+<body>
+  <div class="app">
+    <div data-header></div>
+
+    <main class="main">
+      <div class="container">
+        <!-- Live / soon rail per business requirements: "Сейчас в эфире / Скоро начнётся" -->
+        <section class="section" id="live-rail">
+          <div class="section__head">
+            <h2 class="section__title">
+              <span class="badge badge--live">LIVE</span>
+              Сейчас в эфире <small id="live-count"></small>
+            </h2>
+            <a href="?view=live" class="section__link">Все эфиры →</a>
+          </div>
+          <div class="hero" id="hero"></div>
+        </section>
+
+        <!-- Categories -->
+        <section class="section">
+          <div class="chips" id="categories"></div>
+        </section>
+
+        <!-- Scheduled broadcasts -->
+        <section class="section" id="upcoming-section" hidden>
+          <div class="section__head">
+            <h2 class="section__title">Скоро в эфире</h2>
+            <a href="?view=live" class="section__link">Все запланированные →</a>
+          </div>
+          <div class="rail">
+            <div class="rail__scroll" id="upcoming-rail"></div>
+          </div>
+        </section>
+
+        <!-- Featured channels -->
+        <section class="section">
+          <div class="section__head">
+            <h2 class="section__title">Каналы врачей</h2>
+            <a href="?view=channels" class="section__link">Все каналы →</a>
+          </div>
+          <div class="rail">
+            <div class="rail__scroll" id="channels-rail"></div>
+          </div>
+        </section>
+
+        <!-- Latest videos -->
+        <section class="section">
+          <div class="section__head">
+            <h2 class="section__title" id="videos-title">Новые видео</h2>
+          </div>
+          <div class="video-grid" id="videos-grid"></div>
+        </section>
+      </div>
+    </main>
+
+    <div data-footer></div>
+  </div>
+
+  <script src="js/tv-api.js"></script>
+  <script src="js/tv-app.js"></script>
+  <script>
+    (async function () {
+      DoclubUI.mountChrome("home");
+
+      const view = DoclubUI.qs("view");
+      const q = (DoclubUI.qs("q") || "").toLowerCase();
+      const selectedCat = DoclubUI.qs("category");
+
+      const [channelsRes, broadcastsRes, videosRes] = await Promise.all([
+        DoclubAPI.listChannels(),
+        DoclubAPI.listBroadcasts(),
+        DoclubAPI.listVideos(),
+      ]);
+      let channels = channelsRes.results;
+      let broadcasts = broadcastsRes.results;
+      let videos = videosRes.results;
+
+      // Filter by search
+      if (q) {
+        const m = (s) => (s || "").toLowerCase().includes(q);
+        videos = videos.filter((v) => m(v.title) || m(v.description));
+        broadcasts = broadcasts.filter((b) => m(b.title) || m(b.description));
+        channels = channels.filter((c) => m(c.name) || m(c.description));
+        document.getElementById("videos-title").textContent =
+          `Результаты по запросу «${q}»`;
+      }
+
+      // Filter by category
+      if (selectedCat && selectedCat !== "all") {
+        videos = videos.filter((v) => v.category?.slug === selectedCat);
+        broadcasts = broadcasts.filter((b) => b.category?.slug === selectedCat);
+      }
+
+      // ---- Live hero ----
+      const live = broadcasts.filter((b) => b.status === "live");
+      const upcoming = broadcasts.filter((b) => b.status === "scheduled");
+      document.getElementById("live-count").textContent = live.length
+        ? `· ${live.length} ${pl(live.length, ["эфир", "эфира", "эфиров"])}`
+        : "";
+
+      const hero = document.getElementById("hero");
+      if (live.length === 0) {
+        hero.innerHTML = `
+          <div style="grid-column:1/-1" class="empty">
+            <div class="empty__icon">📡</div>
+            <div class="empty__title">Сейчас нет прямых эфиров</div>
+            <div>Загляните позже или посмотрите расписание ниже.</div>
+          </div>`;
+      } else {
+        const main = live[0];
+        const side = live.slice(1, 4);
+        const mainChannel = channels.find((c) => c.id === main.channel) || {};
+        hero.innerHTML = `
+          <a class="hero__main" href="watch.html?broadcast=${main.id}">
+            ${DoclubUI.placeholderThumb(main)}
+            <div class="hero__main-overlay">
+              <div class="hero__main-meta">
+                <span class="badge badge--live">LIVE</span>
+                <span class="badge" style="background:rgba(255,255,255,.12);color:#fff">${
+                  main.category?.name || ""
+                }</span>
+                <span style="color:#fff;font-size:13px">${DoclubUI.formatViews(
+                  main.viewers
+                )} смотрят</span>
+              </div>
+              <h3 class="hero__main-title">${main.title}</h3>
+              <div class="hero__main-author">${mainChannel.name || ""}</div>
+            </div>
+          </a>
+          <div class="hero__side">
+            ${
+              side.length
+                ? side
+                    .map((b) => {
+                      const ch =
+                        channels.find((c) => c.id === b.channel) || {};
+                      return `
+              <a class="hero__side-card" href="watch.html?broadcast=${b.id}">
+                <div class="hero__side-card-thumb">
+                  ${DoclubUI.placeholderThumb(b)}
+                  <span class="badge badge--live">LIVE</span>
+                </div>
+                <div>
+                  <h4 class="hero__side-card-title">${b.title}</h4>
+                  <div class="hero__side-card-author">${ch.name || ""}</div>
+                  <div class="hero__side-card-meta">${DoclubUI.formatViews(
+                    b.viewers
+                  )} смотрят · ${b.category?.name || ""}</div>
+                </div>
+              </a>
+            `;
+                    })
+                    .join("")
+                : `<div class="empty" style="border:1px dashed var(--border);border-radius:12px;height:100%"><div class="empty__icon">🎬</div><div>Других эфиров пока нет</div></div>`
+            }
+          </div>
+        `;
+      }
+
+      // ---- Categories ----
+      const cats = [
+        { slug: "all", name: "Все" },
+        { slug: "cardiology", name: "Кардиология" },
+        { slug: "neurology", name: "Неврология" },
+        { slug: "pharmacology", name: "Фармакология" },
+        { slug: "endo", name: "Эндокринология" },
+        { slug: "pediatrics", name: "Педиатрия" },
+        { slug: "onco", name: "Онкология" },
+      ];
+      document.getElementById("categories").innerHTML = cats
+        .map(
+          (c) =>
+            `<button class="chip ${
+              (selectedCat || "all") === c.slug ? "is-active" : ""
+            }" data-cat="${c.slug}">${c.name}</button>`
+        )
+        .join("");
+      document.querySelectorAll("[data-cat]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const slug = btn.dataset.cat;
+          const u = new URL(location.href);
+          if (slug === "all") u.searchParams.delete("category");
+          else u.searchParams.set("category", slug);
+          location.href = u.toString();
+        });
+      });
+
+      // ---- Upcoming rail ----
+      if (upcoming.length) {
+        document.getElementById("upcoming-section").hidden = false;
+        document.getElementById("upcoming-rail").innerHTML = upcoming
+          .map(
+            (b) =>
+              `<div class="rail__item card--compact">${DoclubUI.broadcastCard(
+                b,
+                channels
+              )}</div>`
+          )
+          .join("");
+      }
+
+      // ---- Channels rail ----
+      document.getElementById("channels-rail").innerHTML = channels
+        .map((c) => `<div class="rail__item">${DoclubUI.channelCard(c)}</div>`)
+        .join("");
+
+      // ---- Video grid ----
+      document.getElementById("videos-grid").innerHTML = videos.length
+        ? videos.map((v) => DoclubUI.videoCard(v, channels)).join("")
+        : `<div class="empty" style="grid-column:1/-1"><div class="empty__icon">🔍</div><div class="empty__title">Ничего не найдено</div></div>`;
+
+      function pl(n, forms) {
+        const a = Math.abs(n) % 100;
+        const b = a % 10;
+        if (a > 10 && a < 20) return forms[2];
+        if (b > 1 && b < 5) return forms[1];
+        if (b === 1) return forms[0];
+        return forms[2];
+      }
+    })();
+  </script>
+</body>
+</html>
