@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Канал — Doclub.tv</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+  <link rel="stylesheet" href="css/tv.css" />
+</head>
+<body>
+  <div class="app">
+    <div data-header></div>
+
+    <main class="main">
+      <div class="container">
+        <section class="channel-hero" id="channel-hero">
+          <div class="channel-hero__banner" id="channel-banner"></div>
+          <div class="channel-hero__body">
+            <div class="channel-hero__avatar" id="channel-avatar"></div>
+            <div class="channel-hero__info">
+              <h1 class="channel-hero__name" id="channel-name"></h1>
+              <div class="channel-hero__meta" id="channel-meta"></div>
+              <p class="channel-hero__desc" id="channel-desc"></p>
+            </div>
+            <div class="channel-hero__actions" id="channel-actions"></div>
+          </div>
+        </section>
+
+        <div class="tabs" id="channel-tabs">
+          <button class="tabs__tab is-active" data-tab="home">Главная</button>
+          <button class="tabs__tab" data-tab="videos">Видео</button>
+          <button class="tabs__tab" data-tab="broadcasts">Эфиры</button>
+          <button class="tabs__tab" data-tab="posts">Посты</button>
+          <button class="tabs__tab" data-tab="tiers">Уровни доступа</button>
+          <button class="tabs__tab" data-tab="about">О канале</button>
+        </div>
+
+        <!-- Home -->
+        <div class="tab-pane is-active" data-pane="home">
+          <div id="home-live"></div>
+          <div class="section">
+            <div class="section__head">
+              <h2 class="section__title">Последние видео</h2>
+              <button class="section__link" data-goto="videos">Все →</button>
+            </div>
+            <div class="video-grid" id="home-videos"></div>
+          </div>
+          <div class="section">
+            <div class="section__head">
+              <h2 class="section__title">Уровни поддержки</h2>
+              <button class="section__link" data-goto="tiers">Подробнее →</button>
+            </div>
+            <div class="tier-grid" id="home-tiers"></div>
+          </div>
+        </div>
+
+        <!-- Videos -->
+        <div class="tab-pane" data-pane="videos">
+          <div class="video-grid" id="all-videos"></div>
+        </div>
+
+        <!-- Broadcasts -->
+        <div class="tab-pane" data-pane="broadcasts">
+          <div class="video-grid" id="all-broadcasts"></div>
+        </div>
+
+        <!-- Posts -->
+        <div class="tab-pane" data-pane="posts">
+          <div id="all-posts"></div>
+        </div>
+
+        <!-- Tiers -->
+        <div class="tab-pane" data-pane="tiers">
+          <div class="tier-grid" id="all-tiers"></div>
+        </div>
+
+        <!-- About -->
+        <div class="tab-pane" data-pane="about">
+          <div class="post">
+            <h2 class="post__title">О канале</h2>
+            <p class="post__body" id="about-desc"></p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div data-footer></div>
+  </div>
+
+  <script src="js/tv-api.js"></script>
+  <script src="js/tv-app.js"></script>
+  <script>
+    (async function () {
+      DoclubUI.mountChrome("channels");
+
+      const id = DoclubUI.qs("id", 1);
+      const [channel, videos, broadcasts, posts, tiers, allChannels] =
+        await Promise.all([
+          DoclubAPI.getChannel(id),
+          DoclubAPI.listVideos({ channel: id }),
+          DoclubAPI.listBroadcasts({ channel: id }),
+          DoclubAPI.listPosts({ channel: id }),
+          DoclubAPI.listTiers({ channel: id }),
+          DoclubAPI.listChannels(),
+        ]);
+
+      // ---- Hero ----
+      document.title = `${channel.name} — Doclub.tv`;
+      const initials = channel.name
+        .split(" ")
+        .map((p) => p[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase();
+      document.getElementById("channel-avatar").textContent = initials;
+
+      // Channel banner colored by id
+      const palettes = [
+        ["#4f46e5", "#06b6d4"],
+        ["#0f172a", "#4f46e5"],
+        ["#0ea5e9", "#06b6d4"],
+        ["#8b5cf6", "#ec4899"],
+        ["#f59e0b", "#ef4444"],
+        ["#10b981", "#06b6d4"],
+      ];
+      const [a, b] = palettes[channel.id % palettes.length];
+      document.getElementById(
+        "channel-banner"
+      ).style.background = `linear-gradient(135deg, ${a}, ${b})`;
+
+      document.getElementById("channel-name").textContent = channel.name;
+      document.getElementById("channel-meta").innerHTML = `
+        <span><strong>${DoclubUI.formatViews(
+          channel.subscribers
+        )}</strong> подписчиков</span>
+        <span>·</span>
+        <span>${channel.category?.name || "Без категории"}</span>
+        <span>·</span>
+        <span>${channel.owner_user?.full_name || "Автор"}</span>
+      `;
+      document.getElementById("channel-desc").textContent = channel.description;
+      document.getElementById("about-desc").textContent = channel.description;
+
+      const me = DoclubAPI.auth.user;
+      const isOwner = me && channel.owner_user && me.id === channel.owner_user.id;
+      document.getElementById("channel-actions").innerHTML = isOwner
+        ? `<a class="btn btn--ghost" href="studio.html">Редактировать канал</a>`
+        : `
+          <button class="btn btn--primary" data-action="subscribe">Подписаться</button>
+          <button class="btn btn--ghost" data-action="notify">🔔 Уведомления</button>
+        `;
+      document.addEventListener("click", (e) => {
+        if (e.target.closest("[data-action='subscribe']")) {
+          if (!DoclubAPI.auth.isAuthenticated) {
+            location.href = "login.html?next=" + encodeURIComponent(location.href);
+            return;
+          }
+          DoclubUI.toast("Открытие страницы выбора уровня…");
+          // scroll to tiers tab
+          activateTab("tiers");
+        }
+      });
+
+      // ---- Home tab ----
+      const liveBroadcasts = broadcasts.results.filter(
+        (b) => b.status === "live"
+      );
+      const liveDiv = document.getElementById("home-live");
+      if (liveBroadcasts.length) {
+        liveDiv.innerHTML = `
+          <div class="section">
+            <div class="section__head">
+              <h2 class="section__title"><span class="badge badge--live">LIVE</span>Сейчас в эфире</h2>
+            </div>
+            <div class="video-grid">
+              ${liveBroadcasts
+                .map((b) => DoclubUI.broadcastCard(b, allChannels.results))
+                .join("")}
+            </div>
+          </div>
+        `;
+      }
+
+      document.getElementById("home-videos").innerHTML = videos.results
+        .slice(0, 8)
+        .map((v) => DoclubUI.videoCard(v, allChannels.results))
+        .join("");
+
+      const tierHTML = (t, featured) => `
+        <div class="tier ${featured ? "tier--featured" : ""}">
+          <div class="tier__level">Уровень ${t.level}</div>
+          <h3 class="tier__name">${t.name}</h3>
+          <div class="tier__price">${DoclubUI.priceLabel(
+            t.price,
+            t.currency
+          )} <small>/ ${t.period === "year" ? "год" : "мес"}</small></div>
+          <p class="tier__desc">${t.description}</p>
+          <ul class="tier__perks">
+            ${(t.perks || []).map((p) => `<li>${p}</li>`).join("")}
+          </ul>
+          <button class="btn btn--primary btn--block" data-tier="${t.id}">
+            Подписаться · ${DoclubUI.priceLabel(t.price, t.currency)}
+          </button>
+        </div>
+      `;
+      document.getElementById("home-tiers").innerHTML = tiers.results
+        .map((t, i) => tierHTML(t, i === 1))
+        .join("");
+
+      // ---- All videos / broadcasts / posts / tiers ----
+      document.getElementById("all-videos").innerHTML = videos.results
+        .map((v) => DoclubUI.videoCard(v, allChannels.results))
+        .join("");
+
+      document.getElementById("all-broadcasts").innerHTML = broadcasts.results
+        .length
+        ? broadcasts.results
+            .map((b) => DoclubUI.broadcastCard(b, allChannels.results))
+            .join("")
+        : emptyMsg("Эфиров пока нет");
+
+      document.getElementById("all-posts").innerHTML = posts.results.length
+        ? posts.results.map(postHTML).join("")
+        : emptyMsg("Постов пока нет");
+
+      document.getElementById("all-tiers").innerHTML = tiers.results.length
+        ? tiers.results.map((t, i) => tierHTML(t, i === 1)).join("")
+        : emptyMsg("Уровни доступа не настроены");
+
+      document.querySelectorAll("[data-tier]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          if (!DoclubAPI.auth.isAuthenticated) {
+            location.href = "login.html?next=" + encodeURIComponent(location.href);
+            return;
+          }
+          const tierId = btn.dataset.tier;
+          btn.disabled = true;
+          btn.textContent = "Открываем оплату…";
+          await DoclubAPI.subscribe({ channel: channel.id, tier: tierId });
+          DoclubUI.toast("Подписка оформлена", "success");
+          btn.textContent = "Подписка активна";
+        });
+      });
+
+      // ---- Tab switching ----
+      document.querySelectorAll("#channel-tabs .tabs__tab").forEach((tab) => {
+        tab.addEventListener("click", () => activateTab(tab.dataset.tab));
+      });
+      document.querySelectorAll("[data-goto]").forEach((b) => {
+        b.addEventListener("click", () => activateTab(b.dataset.goto));
+      });
+
+      function activateTab(name) {
+        document
+          .querySelectorAll("#channel-tabs .tabs__tab")
+          .forEach((t) =>
+            t.classList.toggle("is-active", t.dataset.tab === name)
+          );
+        document
+          .querySelectorAll(".tab-pane")
+          .forEach((p) =>
+            p.classList.toggle("is-active", p.dataset.pane === name)
+          );
+        window.scrollTo({ top: 200, behavior: "smooth" });
+      }
+
+      function emptyMsg(text) {
+        return `<div class="empty"><div class="empty__icon">📭</div><div class="empty__title">${text}</div></div>`;
+      }
+
+      function postHTML(p) {
+        const locked = p.access_type !== "free";
+        return `
+          <article class="post">
+            <div class="post__head">
+              <div class="post__avatar"></div>
+              <div>
+                <div class="post__author">${channel.name}</div>
+                <div class="post__date">${DoclubUI.formatRelative(
+                  p.published_at
+                )}</div>
+              </div>
+              <div style="margin-left:auto">${DoclubUI.accessBadge(p)}</div>
+            </div>
+            <h2 class="post__title">${p.title}</h2>
+            <p class="post__body">${p.body}</p>
+            ${
+              locked
+                ? `
+              <div class="post__locked">
+                <div class="post__locked-icon">🔒</div>
+                <div class="post__locked-title">Доступно подписчикам</div>
+                <div class="post__locked-desc">
+                  Этот пост открыт для уровня
+                  ${p.min_tier ? `«${p.min_tier.name}»` : "Подписка"} и выше.
+                </div>
+                <button class="btn btn--primary" data-goto="tiers">Открыть уровни</button>
+              </div>`
+                : ""
+            }
+            <div class="post__actions">
+              <span>❤️ 24</span>
+              <span>💬 8</span>
+              <span style="margin-left:auto">${DoclubUI.formatRelative(
+                p.published_at
+              )}</span>
+            </div>
+          </article>
+        `;
+      }
+    })();
+  </script>
+</body>
+</html>

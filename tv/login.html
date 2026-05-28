@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Войти — Doclub.tv</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+  <link rel="stylesheet" href="css/tv.css" />
+</head>
+<body>
+  <div class="app">
+    <div data-header></div>
+
+    <main class="auth">
+      <div class="auth__card">
+        <div class="auth__logo">
+          <span class="header__logo-badge">Dc</span>
+          <span>Doclub<span style="color:#4f46e5">.tv</span></span>
+        </div>
+        <h1 class="auth__title" id="auth-title">Вход в Doclub.tv</h1>
+        <p class="auth__sub" id="auth-sub">
+          Один аккаунт работает во всех сервисах Doclub. Войдите через Doclub.ID — мы не храним пароли на стороне видеохостинга.
+        </p>
+
+        <div class="auth__providers">
+          <button class="auth__provider" data-provider="max">
+            <span style="width:24px;height:24px;border-radius:6px;background:#0066FF;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">M</span>
+            Войти через MAX (бот-аутентификация)
+          </button>
+          <button class="auth__provider" data-provider="telegram">
+            <span style="width:24px;height:24px;border-radius:6px;background:#229ED9;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">T</span>
+            Войти через Telegram Gateway (OTP)
+          </button>
+          <button class="auth__provider" data-provider="telegram-login">
+            <span style="width:24px;height:24px;border-radius:6px;background:#0088CC;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">L</span>
+            Telegram Login (резервный)
+          </button>
+          <button class="auth__provider" data-provider="email">
+            <span style="width:24px;height:24px;border-radius:6px;background:#0f172a;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">@</span>
+            Войти по e-mail
+          </button>
+        </div>
+
+        <div class="auth__divider">или</div>
+
+        <form id="email-form" hidden>
+          <div class="field">
+            <label class="field__label">E-mail</label>
+            <input class="field__input" type="email" name="email" required placeholder="doctor@example.com" />
+          </div>
+          <div class="field">
+            <label class="field__label">Имя и фамилия</label>
+            <input class="field__input" name="full_name" required placeholder="Анна Виноградова" />
+          </div>
+          <div class="field" id="role-field">
+            <label class="field__label">Специальность</label>
+            <select class="field__select" name="role">
+              <option>Кардиология</option>
+              <option>Неврология</option>
+              <option>Эндокринология</option>
+              <option>Педиатрия</option>
+              <option>Онкология</option>
+              <option>Фармацевт</option>
+            </select>
+          </div>
+
+          <div class="consent" id="consent-1">
+            <input type="checkbox" required />
+            <span>
+              Я подтверждаю, что являюсь медицинским работником, и соглашаюсь с
+              <a href="#">правилами Doclub</a>
+              и <a href="#">политикой обработки персональных данных Doclub.ID</a>
+              (v. 2026.05). <strong>Согласие конкретное и информированное</strong>.
+            </span>
+          </div>
+          <div class="consent">
+            <input type="checkbox" />
+            <span>Хочу получать дайджест Doclub.tv в выбранном канале (можно отменить в любой момент).</span>
+          </div>
+
+          <button type="submit" class="btn btn--primary btn--block btn--lg" style="margin-top:14px">Продолжить</button>
+        </form>
+
+        <div class="auth__legal">
+          Doclub.tv использует <strong>Doclub.ID</strong> как единый центр профиля.
+          В нашей базе остаются только роли и подписки канала; персональные
+          данные и согласия по каналам хранятся в Doclub.ID и синхронизируются с
+          CDP (Altcraft).
+        </div>
+      </div>
+    </main>
+
+    <div data-footer></div>
+  </div>
+
+  <script src="js/tv-api.js"></script>
+  <script src="js/tv-app.js"></script>
+  <script>
+    DoclubUI.mountChrome("");
+
+    const intent = DoclubUI.qs("intent");
+    if (intent === "signup") {
+      document.getElementById("auth-title").textContent =
+        "Регистрация в Doclub.tv";
+      document.getElementById("auth-sub").textContent =
+        "Один аккаунт — все сервисы Doclub. Если у вас уже есть Doclub.ID, войдите своим обычным способом.";
+    }
+
+    const next = DoclubUI.qs("next") || "index.html";
+
+    document.querySelectorAll("[data-provider]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const p = b.dataset.provider;
+        if (p === "email") {
+          document.getElementById("email-form").hidden = false;
+          b.style.display = "none";
+          return;
+        }
+        // Real flow: redirect to Doclub.ID OAuth — fake for demo.
+        DoclubUI.toast("Открываем " + p + "…");
+        setTimeout(() => {
+          const demoUser = {
+            id: 101,
+            full_name: "Анна Виноградова",
+            email: "anna.vino@example.com",
+            handle: "anna_vino",
+            is_premium: p === "max",
+            doclub_id: "did_" + Math.random().toString(36).slice(2, 10),
+            source: p,
+            granted_at: new Date().toISOString(),
+          };
+          DoclubAPI.signInWithDoclubId(demoUser);
+          if (demoUser.is_premium) {
+            DoclubUI.toast("Premium на год выдан через MAX", "success");
+          }
+          location.href = next;
+        }, 700);
+      })
+    );
+
+    document.getElementById("email-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(e.target).entries());
+      DoclubAPI.signInWithDoclubId({
+        id: Math.floor(1000 + Math.random() * 9000),
+        full_name: data.full_name,
+        email: data.email,
+        role: data.role,
+        is_premium: false,
+        doclub_id: "did_" + Math.random().toString(36).slice(2, 10),
+        source: "email",
+        granted_at: new Date().toISOString(),
+      });
+      location.href = next;
+    });
+  </script>
+</body>
+</html>

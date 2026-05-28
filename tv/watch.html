@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Просмотр — Doclub.tv</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+  <link rel="stylesheet" href="css/tv.css" />
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
+</head>
+<body>
+  <div class="app">
+    <div data-header></div>
+
+    <main class="main">
+      <div class="container">
+        <div class="watch">
+          <div class="watch__main">
+            <div class="player" id="player">
+              <span class="badge badge--live player__live-pill" id="live-pill" hidden>LIVE</span>
+              <video id="video" controls playsinline poster=""></video>
+              <div class="player__placeholder" id="placeholder">
+                <div class="player__placeholder-icon">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </div>
+                <div id="placeholder-title" style="font-size:18px;font-weight:700;margin-bottom:6px">Готовим поток…</div>
+                <div id="placeholder-sub" style="font-size:13px;color:#94a3b8">Если автор уже в эфире, плеер запустится автоматически.</div>
+              </div>
+            </div>
+
+            <h1 class="watch__title" id="title"></h1>
+            <div class="watch__meta" id="meta"></div>
+
+            <div class="watch__author" id="author-box"></div>
+
+            <div class="watch__description" id="description"></div>
+
+            <!-- Related -->
+            <div class="section">
+              <div class="section__head">
+                <h2 class="section__title">Ещё с канала</h2>
+              </div>
+              <div class="video-grid" id="related"></div>
+            </div>
+          </div>
+
+          <!-- Chat sidebar -->
+          <aside>
+            <div class="chat" id="chat" hidden>
+              <div class="chat__head">
+                <div class="chat__head-title">Чат эфира</div>
+                <div class="chat__viewers" id="viewers"></div>
+              </div>
+              <div class="chat__messages" id="chat-msgs"></div>
+              <form class="chat__form" id="chat-form">
+                <input type="text" placeholder="Напишите сообщение…" id="chat-input" />
+                <button class="btn btn--primary btn--sm" type="submit">→</button>
+              </form>
+            </div>
+
+            <div id="paywall" hidden>
+              <div class="post">
+                <h2 class="post__title">Этот контент доступен подписчикам</h2>
+                <p class="post__body" id="paywall-desc"></p>
+                <a class="btn btn--primary btn--block" id="paywall-cta">Открыть уровни доступа</a>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </main>
+
+    <div data-footer></div>
+  </div>
+
+  <script src="js/tv-api.js"></script>
+  <script src="js/tv-app.js"></script>
+  <script>
+    (async function () {
+      DoclubUI.mountChrome("live");
+
+      const videoId = DoclubUI.qs("video");
+      const broadcastId = DoclubUI.qs("broadcast");
+      const isLive = Boolean(broadcastId);
+
+      const channels = (await DoclubAPI.listChannels()).results;
+      let item, channel;
+
+      if (isLive) {
+        item = await DoclubAPI.getBroadcast(broadcastId);
+      } else {
+        item = await DoclubAPI.getVideo(videoId);
+      }
+      channel = channels.find((c) => c.id === item.channel) || {};
+
+      document.title = `${item.title} — Doclub.tv`;
+      document.getElementById("title").textContent = item.title;
+      document.getElementById("description").textContent =
+        item.description || "Без описания";
+
+      // ---- Meta ----
+      const metaParts = [];
+      if (isLive) {
+        if (item.status === "live") {
+          metaParts.push(`<span class="badge badge--live">LIVE</span>`);
+          metaParts.push(
+            `<span>${DoclubUI.formatViews(item.viewers)} смотрят сейчас</span>`
+          );
+          metaParts.push(`<span>Начали ${DoclubUI.formatRelative(
+            item.actual_start
+          )}</span>`);
+        } else {
+          metaParts.push(`<span class="badge badge--soon">Скоро</span>`);
+          metaParts.push(`<span>${DoclubUI.formatStartTime(
+            item.scheduled_start
+          )}</span>`);
+        }
+      } else {
+        metaParts.push(`<span>${DoclubUI.formatViews(item.views)} просмотров</span>`);
+        metaParts.push(`<span>${DoclubUI.formatRelative(item.published_at)}</span>`);
+        if (item.duration)
+          metaParts.push(`<span>${DoclubUI.formatDuration(item.duration)}</span>`);
+      }
+      metaParts.push(DoclubUI.accessBadge(item));
+      document.getElementById("meta").innerHTML = metaParts.join(" · ");
+
+      // ---- Author box ----
+      const subInitials = (channel.name || "?")
+        .split(" ")
+        .map((p) => p[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase();
+      document.getElementById("author-box").innerHTML = `
+        <div class="watch__author-info">
+          <div class="watch__author-avatar" style="display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700">${subInitials}</div>
+          <div>
+            <a class="watch__author-name" href="channel.html?id=${
+              channel.id
+            }">${channel.name}</a>
+            <div class="watch__author-subs">${DoclubUI.formatViews(
+              channel.subscribers
+            )} подписчиков</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn--ghost" data-act="like">👍 Нравится</button>
+          <button class="btn btn--ghost" data-act="favorite">★ В избранное</button>
+          <a class="btn btn--primary" href="channel.html?id=${
+            channel.id
+          }">Подписаться</a>
+        </div>
+      `;
+      document.querySelectorAll("[data-act]").forEach((b) =>
+        b.addEventListener("click", () => {
+          if (!DoclubAPI.auth.isAuthenticated) {
+            location.href = "login.html?next=" + encodeURIComponent(location.href);
+            return;
+          }
+          DoclubUI.toast("Отметка сохранена", "success");
+        })
+      );
+
+      // ---- Paywall check ----
+      // Mirrors `videohosting.access.can_access`: owner gets through; FREE
+      // is open; SUBSCRIPTION requires an active tier; ONE_TIME requires a
+      // resolved purchase (delegated to dtech_paywall on the backend).
+      const me = DoclubAPI.auth.user;
+      const ownerId = channel.owner_user?.id || channel.owner;
+      const isOwner = me && (me.id === ownerId);
+      const open =
+        item.access_type === "free" ||
+        isOwner ||
+        // demo: assume Premium users can see anything
+        (me && me.is_premium);
+
+      const placeholder = document.getElementById("placeholder");
+      const video = document.getElementById("video");
+      const livePill = document.getElementById("live-pill");
+
+      if (!open) {
+        document.getElementById("paywall").hidden = false;
+        document.getElementById("paywall-desc").textContent =
+          item.access_type === "one_time"
+            ? `Разовая покупка: ${DoclubUI.priceLabel(
+                item.price,
+                item.currency
+              )}.`
+            : "Контент доступен подписчикам канала. Выберите уровень доступа на странице канала.";
+        document.getElementById("paywall-cta").href =
+          "channel.html?id=" + channel.id;
+
+        document.getElementById("placeholder-title").textContent =
+          "🔒 Контент закрыт";
+        document.getElementById("placeholder-sub").innerHTML =
+          item.access_type === "one_time"
+            ? `Купите доступ за <strong>${DoclubUI.priceLabel(
+                item.price,
+                item.currency
+              )}</strong> или оформите подписку.`
+            : "Откройте уровень подписки на странице канала.";
+        video.style.display = "none";
+      } else {
+        // ---- Play video ----
+        const src = pickPlaybackUrl(item, isLive);
+        if (src) {
+          startPlayback(video, src, isLive);
+          placeholder.style.display = "none";
+        } else {
+          // No real source — keep the placeholder shown and hide the bare
+          // <video> control bar to avoid the dead UI.
+          video.controls = false;
+          if (isLive && item.status === "live") {
+            livePill.hidden = false;
+            document.getElementById("placeholder-title").textContent =
+              "Эфир идёт";
+            document.getElementById("placeholder-sub").textContent =
+              "Поток подключается — это демо-режим без реального источника.";
+          } else if (isLive) {
+            document.getElementById("placeholder-title").textContent =
+              "Эфир начнётся " + DoclubUI.formatStartTime(item.scheduled_start);
+            document.getElementById("placeholder-sub").textContent =
+              "Подпишитесь на канал, чтобы получить напоминание.";
+          } else {
+            document.getElementById("placeholder-title").textContent =
+              item.title;
+            document.getElementById("placeholder-sub").textContent =
+              "Демо-плеер без реального источника видео.";
+          }
+        }
+        if (isLive && item.status === "live") livePill.hidden = false;
+      }
+
+      // ---- Chat (live only) ----
+      if (isLive && item.status === "live") {
+        document.getElementById("chat").hidden = false;
+        document.getElementById("viewers").textContent =
+          DoclubUI.formatViews(item.viewers) + " зрителей";
+        const seed = [
+          ["А. Петров", "Добрый день, коллеги!"],
+          ["М. Иванова", "А что по дозировке?"],
+          ["К. Сидоров", "Спасибо за разбор"],
+          ["Е. Соколова", "Жду слайды :)"],
+          ["Doctor_84", "👍👍👍"],
+        ];
+        const chatMsgs = document.getElementById("chat-msgs");
+        chatMsgs.innerHTML = seed
+          .map(
+            ([a, m]) => `
+          <div><span class="chat__msg-author">${a}</span><span class="chat__msg-body">${m}</span></div>
+        `
+          )
+          .join("");
+        chatMsgs.scrollTop = chatMsgs.scrollHeight;
+
+        document.getElementById("chat-form").addEventListener("submit", (e) => {
+          e.preventDefault();
+          if (!DoclubAPI.auth.isAuthenticated) {
+            location.href = "login.html?next=" + encodeURIComponent(location.href);
+            return;
+          }
+          const input = document.getElementById("chat-input");
+          if (!input.value.trim()) return;
+          const div = document.createElement("div");
+          div.innerHTML = `<span class="chat__msg-author">${
+            me.full_name || "Вы"
+          }</span><span class="chat__msg-body">${input.value}</span>`;
+          chatMsgs.appendChild(div);
+          input.value = "";
+          chatMsgs.scrollTop = chatMsgs.scrollHeight;
+        });
+      }
+
+      // ---- Related ----
+      const related = (await DoclubAPI.listVideos({ channel: channel.id }))
+        .results.filter((v) => v.id !== item.id)
+        .slice(0, 8);
+      document.getElementById("related").innerHTML = related.length
+        ? related.map((v) => DoclubUI.videoCard(v, channels)).join("")
+        : `<div class="empty" style="grid-column:1/-1">Других видео на канале пока нет.</div>`;
+
+      function pickPlaybackUrl(item, live) {
+        if (live) {
+          // YCV broadcast HLS URL would come from the backend (status=ready/live)
+          return item.hls_playlist_url || item.ycv_player_url || "";
+        }
+        return item.hls_playlist_url || item.ycv_player_url || "";
+      }
+
+      function startPlayback(videoEl, src, live) {
+        if (src.endsWith(".m3u8") && window.Hls && Hls.isSupported()) {
+          const hls = new Hls({ lowLatencyMode: live });
+          hls.loadSource(src);
+          hls.attachMedia(videoEl);
+        } else {
+          videoEl.src = src;
+        }
+        videoEl.play().catch(() => {});
+      }
+    })();
+  </script>
+</body>
+</html>
